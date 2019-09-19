@@ -26,32 +26,10 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.netmgt.threshd.shell;
+package org.opennms.netmgt.threshd;
 
-import org.apache.karaf.shell.api.action.Command;
-import org.apache.karaf.shell.api.action.Option;
-import org.apache.karaf.shell.api.action.lifecycle.Service;
-import org.opennms.netmgt.threshd.ThresholdStateMonitor;
+public interface ThresholdStateMonitor {
+    void setState(String key, ThresholdEvaluatorState state);
 
-import jdk.nashorn.internal.ir.annotations.Reference;
-
-@Command(scope = "opennms-threshold-states", name = "clear", description = "Clears a specific threshold state")
-@Service
-public class Clear extends AbstractKeyOrIndexCommand {
-    @Reference
-    ThresholdStateMonitor thresholdStateMonitor;
-
-    @Option(name = "-m", aliases = "--memory", description = "When set, clears the in-memory state in addition to the" +
-            " persisted state")
-    private boolean clearMemory;
-
-    @Override
-    public Object execute() {
-        String key = getKey();
-        blobStore.delete(key, THRESHOLDING_KV_CONTEXT);
-        if (clearMemory) {
-            thresholdStateMonitor.clearState(key);
-        }
-        return null;
-    }
+    void clearState(String key);
 }

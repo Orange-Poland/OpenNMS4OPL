@@ -92,6 +92,11 @@ public interface ThresholdEvaluatorState {
      * <p>clearState</p>
      */
     public void clearState();
+
+    /**
+     * <p>clearState</p>
+     */
+    public void reinitializeState();
     
     /**
      * <p>getThresholdConfig</p>

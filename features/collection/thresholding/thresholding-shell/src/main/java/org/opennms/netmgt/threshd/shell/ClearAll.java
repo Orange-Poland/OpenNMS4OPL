@@ -31,15 +31,33 @@ package org.opennms.netmgt.threshd.shell;
 import java.util.concurrent.CompletableFuture;
 
 import org.apache.karaf.shell.api.action.Command;
+import org.apache.karaf.shell.api.action.Option;
 import org.apache.karaf.shell.api.action.lifecycle.Service;
+import org.opennms.netmgt.threshd.ThresholdStateMonitor;
+
+import jdk.nashorn.internal.ir.annotations.Reference;
 
 @Command(scope = "opennms-threshold-states", name = "clear-all", description = "Clears all threshold states")
 @Service
 public class ClearAll extends AbstractThresholdStateCommand {
+    @Reference
+    ThresholdStateMonitor thresholdStateMonitor;
+
+    @Option(name = "-m", aliases = "--memory", description = "When set, clears the in-memory state in addition to the" +
+            " persisted state")
+    private boolean clearMemory;
+
     @Override
     public Object execute() throws InterruptedException {
         System.out.print("Clearing all thresholding states...");
-        CompletableFuture<Void> clearFuture = blobStore.truncateContextAsync(THRESHOLDING_KV_CONTEXT);
+        CompletableFuture<Void> clearFuture =
+                blobStore.truncateContextAsync(THRESHOLDING_KV_CONTEXT).thenRun(() -> {
+                    if (clearMemory) {
+                        blobStore.enumerateContext(THRESHOLDING_KV_CONTEXT)
+                                .keySet()
+                                .forEach(key -> thresholdStateMonitor.clearState(key));
+                    }
+                });
 
         while (!clearFuture.isDone()) {
             Thread.sleep(1000);

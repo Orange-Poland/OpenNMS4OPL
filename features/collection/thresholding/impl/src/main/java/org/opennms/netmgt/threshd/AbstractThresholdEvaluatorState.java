@@ -104,6 +104,8 @@ public abstract class AbstractThresholdEvaluatorState<T extends AbstractThreshol
     private Long sequenceNumber;
 
     private boolean firstEvaluation = true;
+    
+    private ThresholdStateMonitor thresholdStateMonitor;
 
     /**
      * A last updated cache to track when the last time we know we persisted a given key was. This is for performance
@@ -217,7 +219,7 @@ public abstract class AbstractThresholdEvaluatorState<T extends AbstractThreshol
     }
 
     @Override
-    public Status evaluate(double dsValue, Long sequenceNumber) {
+    public synchronized Status evaluate(double dsValue, Long sequenceNumber) {
         if (sequenceNumber != null) {
             // If a sequence number was provided, only fetch the state if this is the first sequence number we have seen
             // or if this was not the next sequence number (indicating someone else processed the last one)
@@ -233,6 +235,10 @@ public abstract class AbstractThresholdEvaluatorState<T extends AbstractThreshol
         Status status = evaluateAfterFetch(dsValue);
         // Persist the state if it has changed and is now dirty
         persistStateIfNeeded();
+        if (firstEvaluation) {
+            firstEvaluation = false;
+            thresholdStateMonitor.setState(key, this);
+        }
         firstEvaluation = false;
         return status;
     }
@@ -262,6 +268,11 @@ public abstract class AbstractThresholdEvaluatorState<T extends AbstractThreshol
     public void clearState() {
         clearStateBeforePersist();
         persistStateIfNeeded();
+    }
+
+    @Override
+    public synchronized void reinitializeState() {
+        clearStateBeforePersist();
     }
 
     protected abstract void clearStateBeforePersist();
