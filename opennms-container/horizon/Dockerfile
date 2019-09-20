@@ -32,7 +32,7 @@ RUN setcap cap_net_raw+ep ${JAVA_HOME}/bin/java && \
     echo ${JAVA_HOME}/lib/jli > /etc/ld.so.conf.d/java-latest.conf && \
     ldconfig
 
-# Set gid=0 and make group perms==owner perms
+# Create a user opennms with a specific UID and set home dir
 RUN groupadd -g 10001 opennms && \
     adduser -u 10001 -g 10001 -d /opt/opennms -s /usr/bin/bash opennms
 ##

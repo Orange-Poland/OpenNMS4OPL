@@ -25,11 +25,17 @@ RUN rpm --import "${REPO_KEY_URL}" && \
 RUN setcap cap_net_raw+ep ${JAVA_HOME}/bin/java && \
     echo ${JAVA_HOME}/lib/jli > /etc/ld.so.conf.d/java-latest.conf && \
     ldconfig
+    
+# Create a user sentinel with a specific UID and set home dir
+RUN groupadd -g 10001 sentinel && \
+    adduser -u 10001 -g 10001 -d /opt/sentinel -s /usr/bin/bash sentinel
 
 ##
 # Install and setup OpenNMS Sentinel RPMS
 ##
 FROM sentinel-base
+
+ARG USER="sentinel"
 
 # A default which installs the minimum required Minion packages
 ARG SENTINEL_PACKAGES="opennms-sentinel"
@@ -46,7 +52,9 @@ RUN if [[ "$(ls -1 /tmp/rpms/*.rpm 2>/dev/null | wc -l)" != 0 ]]; then yum -y lo
     if [[ -n ${ADD_YUM_PACKAGES} ]]; then yum -y install ${ADD_YUM_PACKAGES}; fi && \
     rm -rf /tmp/rpms && \
     yum clean all && \
-    rm -rf /var/cache/yum
+    rm -rf /var/cache/yum && \
+    chgrp -R 0 /opt/sentinel && \
+    chmod -R g=u /opt/sentinel
 
 COPY ./assets/entrypoint.sh /
 COPY ./assets/health.sh /
@@ -54,6 +62,9 @@ COPY ./assets/health.sh /
 VOLUME [ "/opt/sentinel/deploy", "/opt/sentinel/etc", "/opt/sentinel/data" ]
 
 WORKDIR /opt/sentinel
+
+### Containers should NOT run as root as a good practice
+USER 10001
 
 ENTRYPOINT [ "/entrypoint.sh" ]
 
