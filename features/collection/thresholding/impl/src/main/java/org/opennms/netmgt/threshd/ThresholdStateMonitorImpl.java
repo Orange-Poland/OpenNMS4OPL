@@ -28,23 +28,26 @@
 
 package org.opennms.netmgt.threshd;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.opennms.netmgt.threshd.api.ReinitializableState;
+import org.opennms.netmgt.threshd.api.ThresholdStateMonitor;
 
 public class ThresholdStateMonitorImpl implements ThresholdStateMonitor {
-    private final Map<String, ThresholdEvaluatorState> stateMap = new HashMap<>();
+    private final Map<String, ReinitializableState> stateMap = new ConcurrentHashMap<>();
 
     @Override
-    public void setState(String key, ThresholdEvaluatorState state) {
+    public void trackState(String key, ReinitializableState state) {
         stateMap.put(key, state);
     }
 
     @Override
-    public void clearState(String key) {
-        ThresholdEvaluatorState state = stateMap.get(key);
+    public void reinitializeState(String key) {
+        ReinitializableState state = stateMap.get(key);
 
         if (state != null) {
-            state.reinitializeState();
+            state.reinitialize();
         }
     }
 }

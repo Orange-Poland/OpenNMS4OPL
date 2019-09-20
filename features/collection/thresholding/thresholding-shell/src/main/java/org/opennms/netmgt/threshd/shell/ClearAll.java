@@ -33,7 +33,7 @@ import java.util.concurrent.CompletableFuture;
 import org.apache.karaf.shell.api.action.Command;
 import org.apache.karaf.shell.api.action.Option;
 import org.apache.karaf.shell.api.action.lifecycle.Service;
-import org.opennms.netmgt.threshd.ThresholdStateMonitor;
+import org.opennms.netmgt.threshd.api.ThresholdStateMonitor;
 
 import jdk.nashorn.internal.ir.annotations.Reference;
 
@@ -50,21 +50,30 @@ public class ClearAll extends AbstractThresholdStateCommand {
     @Override
     public Object execute() throws InterruptedException {
         System.out.print("Clearing all thresholding states...");
-        CompletableFuture<Void> clearFuture =
-                blobStore.truncateContextAsync(THRESHOLDING_KV_CONTEXT).thenRun(() -> {
-                    if (clearMemory) {
-                        blobStore.enumerateContext(THRESHOLDING_KV_CONTEXT)
-                                .keySet()
-                                .forEach(key -> thresholdStateMonitor.clearState(key));
-                    }
-                });
+
+        CompletableFuture<Void> clearFuture;
+
+        if (clearMemory) {
+            // When clearing the in-memory state we have to first enumerate all the states to get the keys and then we
+            // can reinitialize each of them individually followed by clearing their state from the blob store
+            clearFuture = blobStore.enumerateContextAsync(THRESHOLDING_KV_CONTEXT)
+                    .thenAccept(map -> map.keySet().forEach(key -> thresholdStateMonitor.reinitializeState(key)))
+                    .thenCompose((v) -> blobStore.truncateContextAsync(THRESHOLDING_KV_CONTEXT));
+        } else {
+            clearFuture = blobStore.truncateContextAsync(THRESHOLDING_KV_CONTEXT);
+        }
 
         while (!clearFuture.isDone()) {
             Thread.sleep(1000);
             System.out.print('.');
         }
 
-        System.out.println("done");
+        try {
+            clearFuture.get();
+            System.out.println("done");
+        } catch (Exception e) {
+            System.out.println("Failed to clear all states" + e);
+        }
 
         return null;
     }

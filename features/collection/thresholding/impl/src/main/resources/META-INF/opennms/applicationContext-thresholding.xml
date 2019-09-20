@@ -16,6 +16,8 @@
 
     <bean name="thresholdingSetPersister" class="org.opennms.netmgt.threshd.DefaultThresholdingSetPersister"/>
 
+    <bean name="thresholdStateMonitor" class="org.opennms.netmgt.threshd.ThresholdStateMonitorImpl" />
+
     <bean id="thresholdingService" class="org.opennms.netmgt.threshd.ThresholdingServiceImpl">
         <property name="thresholdingSetPersister" ref="thresholdingSetPersister"/>
     </bean>

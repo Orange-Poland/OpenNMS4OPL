@@ -26,10 +26,19 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.netmgt.threshd;
+package org.opennms.netmgt.threshd.api;
 
+/**
+ * An interface for tracking and retrieving the in-memory values of thresholding states. This acts as a registry for all
+ * the states so that the states can be exposed to other services who may want to manipulate them (such as
+ * reinitializing them).
+ */
 public interface ThresholdStateMonitor {
-    void setState(String key, ThresholdEvaluatorState state);
+    void trackState(String key, ReinitializableState state);
 
-    void clearState(String key);
+    /**
+     * Reinitialize the state identified by the given key. Reinitializing the state resets it back to default values (if
+     * it was triggered it will now be rearmed, any counts it was tacking will now be reset, etc...).
+     */
+    void reinitializeState(String key);
 }

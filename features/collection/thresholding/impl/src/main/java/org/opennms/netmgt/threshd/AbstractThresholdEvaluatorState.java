@@ -32,13 +32,11 @@ import static org.opennms.core.utils.InetAddressUtils.addr;
 
 import java.io.Serializable;
 import java.text.DecimalFormat;
-import java.util.AbstractMap;
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 
 import org.joda.time.Duration;
 import org.nustaq.serialization.FSTConfiguration;
@@ -55,7 +53,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
-import com.google.common.util.concurrent.AtomicDouble;
 import com.swrve.ratelimitedlogger.RateLimitedLog;
 
 /**
@@ -104,8 +101,6 @@ public abstract class AbstractThresholdEvaluatorState<T extends AbstractThreshol
     private Long sequenceNumber;
 
     private boolean firstEvaluation = true;
-    
-    private ThresholdStateMonitor thresholdStateMonitor;
 
     /**
      * A last updated cache to track when the last time we know we persisted a given key was. This is for performance
@@ -237,7 +232,9 @@ public abstract class AbstractThresholdEvaluatorState<T extends AbstractThreshol
         persistStateIfNeeded();
         if (firstEvaluation) {
             firstEvaluation = false;
-            thresholdStateMonitor.setState(key, this);
+            // We don't bother advertising ourselves until the first time we perform an evaluation since we will have
+            // default values until that point (being reinitialized would have no effect)
+            thresholdingSession.getThresholdStateMonitor().trackState(key, this);
         }
         firstEvaluation = false;
         return status;
@@ -271,7 +268,7 @@ public abstract class AbstractThresholdEvaluatorState<T extends AbstractThreshol
     }
 
     @Override
-    public synchronized void reinitializeState() {
+    public synchronized void reinitialize() {
         clearStateBeforePersist();
     }
 
