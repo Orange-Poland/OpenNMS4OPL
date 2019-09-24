@@ -44,7 +44,7 @@
         <argument ref="kafkaConfigProvider" />
         <argument ref="identity"/>
         <argument ref="tracerRegistry"/>
-        <argument ref="metricRegistry"/>
+        <argument ref="kafkaSinkMetricRegistry"/>
     </bean>
     <service ref="kafkaMessageConsumerManager" interface="org.opennms.core.ipc.sink.api.MessageConsumerManager" />
 
