@@ -65,7 +65,7 @@ public class SFlowConverterTest {
 
         final List<Flow> flows = new SFlowConverter().convert(bsonDocument);
 
-        // There are six flows int the document, but one is skipped, because it's ethernet only
+        // There are six flows int the document, but two are skipped, because they don't contain IPv{4,6} information
         assertThat(flows.size(), is(5));
     }
 
